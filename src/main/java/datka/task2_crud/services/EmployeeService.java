@@ -7,6 +7,7 @@ import datka.task2_crud.models.Employee;
 import datka.task2_crud.models.Organization;
 import datka.task2_crud.repositories.EmployeeRepository;
 import datka.task2_crud.repositories.OrganizationRepository;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -60,13 +61,10 @@ public class EmployeeService {
 
     public Response update(Long employeeId, EmployeeRequest request) {
 
-        Optional<Employee> employeeOptional = employeeRepository.findById(employeeId);
+        Employee employee = employeeRepository.findById(employeeId).orElseThrow(
+                () -> new EntityNotFoundException("Employee with id " + employeeId + " not found!")
+        );
 
-        if (employeeOptional.isEmpty()) {
-            return new Response("Employee not found");
-        }
-
-        Employee employee = employeeOptional.get();
         employee.setEmail(request.email());
         employee.setHomePhone(request.homePhone());
         employee.setMobilePhone(request.mobilePhone());
@@ -79,18 +77,14 @@ public class EmployeeService {
         employeeRepository.save(employee);
 
         return new Response("Employee updated successfully");
-
     }
 
     public List<EmployeeResponse> getAll(Long organizationId) {
 
-        Optional<Organization> organizationOptional = organizationRepository.findById(organizationId);
+        Organization organization = organizationRepository.findById(organizationId).orElseThrow(
+                () -> new EntityNotFoundException("Organization with id " + organizationId + " not found!")
+        );
 
-        if (organizationOptional.isEmpty()) {
-            return null; // You might want to handle this differently (e.g., returning an error response).
-        }
-
-        Organization organization = organizationOptional.get();
         List<Employee> employees = organization.getEmployees();
 
         return employees.stream()
@@ -109,11 +103,12 @@ public class EmployeeService {
     }
 
     public Response deleteById(Long employeeId) {
-        if (employeeRepository.existsById(employeeId)) {
-            employeeRepository.deleteById(employeeId);
-            return new Response("Employee deleted successfully");
-        } else {
-            return new Response("Employee not found");
-        }
+
+        employeeRepository.delete(employeeRepository.findById(employeeId).orElseThrow(
+                        () -> new EntityNotFoundException("Employee with id " + employeeId + " not found!")
+                )
+        );
+        return new Response("Employee deleted successfully");
+
     }
 }
